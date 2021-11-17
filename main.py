@@ -1,22 +1,24 @@
 from sys import stdout
 from os import system, name
+import copy
 import re
 
 # Display Board Choices
 def show_options():
-    print("|1234567|")
+    print(" 1 2 3 4 5 6 7")
 
 
 # Display Board
 def print_board(board):
-    print("_________")
+    print("________________")
     for line in board:
         stdout.write('|')
         for char in line:
             stdout.write(char)
+            stdout.write(' ')
         stdout.write('|')
         print()
-    print("|=======|")
+    print("|==============|")
 
 
 # from geeksforgeeks.org
@@ -62,43 +64,61 @@ def player_wins(board):
     input("You have won!\nPress Enter to end the game.")
 
 
-def check_column(board, column, player):
+# def check_column(board, column, player):
+#     column_string = ""
+#     blue = re.compile('B+')
+#     red = re.compile('R+')
+#
+#     for line in board:
+#         column_string = column_string + line[column]
+#
+#     if player == 'B':
+#         m = blue.findall(column_string)
+#     else:
+#         m = red.findall(column_string)
+#
+#     return len(max(m, key=len))
+
+
+def column_string(board):
     column_string = ""
-    blue = re.compile('B+')
-    red = re.compile('R+')
+    for column in range(0,7):
+        for line in board:
+            column_string = column_string + line[column]
+        column_string = column_string + '-'
 
-    for line in board:
-        column_string = column_string + line[column]
+    return column_string
 
-    if player == 'B':
-        m = blue.findall(column_string)
-    else:
-        m = red.findall(column_string)
-
-    return len(max(m, key=len))
-
-
-def check_row(board, column, player):
+def row_string(board):
     row_string = ""
-    blue = re.compile('B+')
-    red = re.compile('R+')
-
-    row_index = 0
     for line in board:
-        if line[column] == 'O':
-            row_index += 1
-        else:
-            break
+        for space in range(0,7):
+            row_string = row_string + line[space]
+        row_string = row_string + '-'
 
-    for char in board[row_index]:
-        row_string = row_string + char
+    return row_string
 
-    if player == 'B':
-        m = blue.findall(row_string)
-    else:
-        m = red.findall(row_string)
-
-    return len(max(m, key=len))
+# def check_row(board, column, player):
+#     row_string = ""
+#     blue = re.compile('B+')
+#     red = re.compile('R+')
+#
+#     row_index = 0
+#     for line in board:
+#         if line[column] == 'O':
+#             row_index += 1
+#         else:
+#             break
+#
+#     for char in board[row_index]:
+#         row_string = row_string + char
+#
+#     if player == 'B':
+#         m = blue.findall(row_string)
+#     else:
+#         m = red.findall(row_string)
+#
+#     return len(max(m, key=len))
 
 
 # create string of diagonal chars separated by '-'
@@ -144,47 +164,94 @@ def get_dia_string(board):
     return dia_string
 
 
-def check_dia(board, column, player):
+# def check_dia(board, column, player):
+#
+#     test_board = [
+#         ['Q', 'R', 'Z', 'Y', 'X', 'V', 'W'],
+#         ['S', 'O', 'O', 'O', 'O', 'O', 'U'],
+#         ['T', 'O', 'O', 'O', 'O', 'O', 'T'],
+#         ['Y', 'O', 'O', 'O', 'O', 'O', 'Y'],
+#         ['X', 'O', 'O', 'O', 'O', 'O', 'Z'],
+#         ['V', 'W', 'U', 'T', 'S', 'Q', 'R'],
+#              ]
+#     # print(get_dia_string(test_board))
+#
+#     dia_string = get_dia_string(board)
+#
+#     blue = re.compile('B+')
+#     red = re.compile('R+')
+#
+#     if player == 'B':
+#         m = blue.findall(dia_string)
+#     else:
+#         m = red.findall(dia_string)
+#
+#     return len(max(m, key=len))
 
-    test_board = [
-        ['Q', 'R', 'Z', 'Y', 'X', 'V', 'W'],
-        ['S', 'O', 'O', 'O', 'O', 'O', 'U'],
-        ['T', 'O', 'O', 'O', 'O', 'O', 'T'],
-        ['Y', 'O', 'O', 'O', 'O', 'O', 'Y'],
-        ['X', 'O', 'O', 'O', 'O', 'O', 'Z'],
-        ['V', 'W', 'U', 'T', 'S', 'Q', 'R'],
-             ]
-    # print(get_dia_string(test_board))
 
-    dia_string = get_dia_string(board)
+def get_board_string(board):
+    column = column_string(board)
+    row = row_string(board)
+    diagonals = get_dia_string(board)
+    all_lines = column + row + diagonals
+    return all_lines
 
-    blue = re.compile('B+')
-    red = re.compile('R+')
+def game_is_over(board, player):
+    blue = re.compile('B{4,6}')
+    red = re.compile('R{4,6}')
 
-    if player == 'B':
-        m = blue.findall(dia_string)
-    else:
-        m = red.findall(dia_string)
+    board_string = get_board_string(board)
 
-    return len(max(m, key=len))
-
-
-def game_is_over(board, column, player):
-    # player: ai = 0, human = 1
-    # set player symbol for matching
+    # player: ai/R = 0, human/B = 1
     if player == 0:
-        symbol = 'R'
+        m = red.findall(board_string)
     else:
-        symbol = 'B'
+        m = blue.findall(board_string)
 
-    if check_column(board, column, symbol) >= 4:
+    if m:
         return True
-    if check_row(board, column, symbol) >= 4:
-        return True
-    if check_dia(board, column, symbol) >= 4:
-        return True
+    else:
+        return False
 
-    return False
+
+def win_opportunities(board):
+    red1 = re.compile('RO{3,5}|O{3,5}R')
+    red2 = re.compile('RRO{2,5}|O{2,5}RR')
+    red3 = re.compile('RRRO{2,5}|O{2,5}RRR|RROR|RORR')
+    red4 = re.compile('RRRR')
+    blue1 = re.compile('BO{3,5}|O{3,5}B')
+    blue2 = re.compile('BBO{2,5}|O{2,5}BB')
+    blue3 = re.compile('BBBO{2,5}|O{2,5}BBB|BBOB|BOBB')
+    blue4 = re.compile('BBBB')
+
+    board_string = get_board_string(board)
+    m = re.split('-', board_string)
+
+    red_match = [0, 0, 0, 0]
+    blue_match = [0, 0, 0, 0]
+
+    for line in m:
+        if bool(re.search(red4, line)):
+            red_match[3] += 1
+        elif bool(re.search(red3, line)):
+            red_match[2] += 1
+        elif bool(re.search(red2, line)):
+            red_match[1] += 1
+        elif bool(re.search(red1, line)):
+            red_match[0] += 1
+
+        if bool(re.search(blue4, line)):
+            blue_match[3] += 1
+        elif bool(re.search(blue3, line)):
+            blue_match[2] += 1
+        elif bool(re.search(blue2, line)):
+            blue_match[1] += 1
+        elif bool(re.search(blue1, line)):
+            blue_match[0] += 1
+
+    score_pair = [red_match, blue_match]
+
+    return score_pair
 
 
 # returns True if player wins
@@ -204,7 +271,7 @@ def player_turn(board):
     column = user_input - 1
     # Make change to board
     make_user_move(board, column, get_row(board, column))
-    if game_is_over(board, column, 1):
+    if game_is_over(board, 1):
         player_wins(board)
         return True
     else:
@@ -216,6 +283,13 @@ def check_column_user(board, index):
     if board[0][index - 1] == 'O':
         return True
     return False
+
+
+def board_full(board):
+    for space in board[0]:
+        if space == 'O':
+            return False
+    return True
 
 
 def get_row(board, index):
@@ -232,20 +306,87 @@ def make_user_move(board, column, row):
     board[row][column] = 'B'
 
 
+def gen_child_boards(board, player):
+    children = []
+    for space in range(0, 7):
+        if board[0][space] == 'O':
+            b = copy.deepcopy(board)
+            b[get_row(board, space)][space] = player
+            children.append(b)
+
+    return children
+
+
+def evaluation(board):
+    scores = win_opportunities(board)
+    plus = scores[0][0] + 2*scores[0][1] + 10*scores[0][2] + 10000*scores[0][3]
+    minus = scores[1][0] + 2*scores[1][1] + 10*scores[1][2] + 10000*scores[1][3]
+    final = plus - minus
+    return final
+
+
+class Node:
+    def __init__(self, board):
+        self.board = board
+        self.children = []
+    def get_children(self, player): # ! These need to be nodes themselves..
+        self.children = gen_child_boards(self.board, player)
+    def get_board(self):
+        return self.board
+
+
+def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
+    board = parent.get_board()
+    current_score = evaluation(board)
+    if depth == 4 or board_full(parent.board) or abs(current_score) >= 1000: # someone has won if the score > 1000
+        return current_score
+    elif isMaxPlayer:
+        parent.get_children('R')
+        for child in parent.children:
+            alpha = max(alpha, alphabeta(child, depth+1, alpha, beta, False))
+            if beta <= alpha:
+                break
+            # if depth == 0:
+            #     return child
+            return alpha
+    else: #minPlayer
+        parent.get_children('B')
+        for child in parent.children:
+            beta = min(beta, alphabeta(child, depth+1, alpha, beta, True))
+            if beta <= alpha:
+                break
+            return beta
+
+
 def ai_turn(board):
-    print("AI Turn Placeholder")
+    # print("AI Turn Placeholder")
+    root = Node(board)
+
+    alphabeta(root, 0, -100000, 100000, True)
+
     return False
 
 
 def main():
+    test_board = [
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['B', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['R', 'O', 'B', 'R', 'R', 'O', 'O'],
+        ['B', 'B', 'B', 'R', 'R', 'O', 'O'],
+        ['B', 'B', 'R', 'R', 'R', 'O', 'R'],
+    ]
     board = [
         ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
         ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['B', 'O', 'O', 'B', 'O', 'O', 'O'],
-        ['R', 'O', 'R', 'O', 'O', 'O', 'O'],
-        ['B', 'B', 'O', 'O', 'O', 'O', 'O'],
-        ['B', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
              ]
+
+    # evaluation(test_board)
+    # gen_child_boards(test_board, 'X')
 
     # Game loop starting with AI's turn
     while True:
@@ -253,7 +394,6 @@ def main():
             break
         elif player_turn(board): #true if player wins
             break
-
 
 
 main()
