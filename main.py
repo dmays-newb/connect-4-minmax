@@ -1,6 +1,8 @@
+# Dustin Mays - CS 480 - Minimax Connect 4
+
 from sys import stdout
 from os import system, name
-import copy
+import copy, time
 import re
 
 # Display Board Choices
@@ -46,11 +48,13 @@ def get_user_choice():
                 print("Out of range. Try again.")
 
 
+# show column numbers and print board
 def print_player_dashboard(board):
     show_options()
     print_board(board)
 
 
+# clear board with enter
 def end_player_turn(board):
     clear()
     print_board(board)
@@ -58,34 +62,21 @@ def end_player_turn(board):
     clear()
 
 
+# clear screen, print board, and print winning statement
 def player_wins(board):
     clear()
     print_board(board)
     input("You have won!\nPress Enter to end the game.")
 
 
+# clear screen, print board, and print losing statement
 def ai_wins(board):
     clear()
     print_board(board)
     input("You have lost!\nPress Enter to end the game.")
 
 
-# def check_column(board, column, player):
-#     column_string = ""
-#     blue = re.compile('B+')
-#     red = re.compile('R+')
-#
-#     for line in board:
-#         column_string = column_string + line[column]
-#
-#     if player == 'B':
-#         m = blue.findall(column_string)
-#     else:
-#         m = red.findall(column_string)
-#
-#     return len(max(m, key=len))
-
-
+# create string from each column
 def column_string(board):
     column_string = ""
     for column in range(0,7):
@@ -95,6 +86,8 @@ def column_string(board):
 
     return column_string
 
+
+# create string from each row
 def row_string(board):
     row_string = ""
     for line in board:
@@ -103,28 +96,6 @@ def row_string(board):
         row_string = row_string + '-'
 
     return row_string
-
-# def check_row(board, column, player):
-#     row_string = ""
-#     blue = re.compile('B+')
-#     red = re.compile('R+')
-#
-#     row_index = 0
-#     for line in board:
-#         if line[column] == 'O':
-#             row_index += 1
-#         else:
-#             break
-#
-#     for char in board[row_index]:
-#         row_string = row_string + char
-#
-#     if player == 'B':
-#         m = blue.findall(row_string)
-#     else:
-#         m = red.findall(row_string)
-#
-#     return len(max(m, key=len))
 
 
 # create string of diagonal chars separated by '-'
@@ -170,31 +141,7 @@ def get_dia_string(board):
     return dia_string
 
 
-# def check_dia(board, column, player):
-#
-#     test_board = [
-#         ['Q', 'R', 'Z', 'Y', 'X', 'V', 'W'],
-#         ['S', 'O', 'O', 'O', 'O', 'O', 'U'],
-#         ['T', 'O', 'O', 'O', 'O', 'O', 'T'],
-#         ['Y', 'O', 'O', 'O', 'O', 'O', 'Y'],
-#         ['X', 'O', 'O', 'O', 'O', 'O', 'Z'],
-#         ['V', 'W', 'U', 'T', 'S', 'Q', 'R'],
-#              ]
-#     # print(get_dia_string(test_board))
-#
-#     dia_string = get_dia_string(board)
-#
-#     blue = re.compile('B+')
-#     red = re.compile('R+')
-#
-#     if player == 'B':
-#         m = blue.findall(dia_string)
-#     else:
-#         m = red.findall(dia_string)
-#
-#     return len(max(m, key=len))
-
-
+# create string from all rows, columns, and diagonals
 def get_board_string(board):
     column = column_string(board)
     row = row_string(board)
@@ -202,6 +149,8 @@ def get_board_string(board):
     all_lines = column + row + diagonals
     return all_lines
 
+
+# check if game is over
 def game_is_over(board, player):
     blue = re.compile('B{4,6}')
     red = re.compile('R{4,6}')
@@ -219,15 +168,18 @@ def game_is_over(board, player):
     else:
         return False
 
-
+# return a tuple of lists
+# each list represents the number of ways a player can win
+# increments up from one piece occupied and then blanks
+# up to four consecutive matching pieces
 def win_opportunities(board):
-    red1 = re.compile('RO{3,5}|O{3,5}R')
-    red2 = re.compile('RRO{2,5}|O{2,5}RR')
-    red3 = re.compile('RRRO{2,5}|O{2,5}RRR|RROR|RORR')
+    red1 = re.compile('R_{3,5}|_{3,5}R')
+    red2 = re.compile('RR_{2,5}|_{2,5}RR')
+    red3 = re.compile('RRR_{2,5}|_{2,5}RRR|RR_R|R_RR')
     red4 = re.compile('RRRR')
-    blue1 = re.compile('BO{3,5}|O{3,5}B')
-    blue2 = re.compile('BBO{2,5}|O{2,5}BB')
-    blue3 = re.compile('BBBO{2,5}|O{2,5}BBB|BBOB|BOBB')
+    blue1 = re.compile('B_{3,5}|_{3,5}B')
+    blue2 = re.compile('BB_{2,5}|_{2,5}BB')
+    blue3 = re.compile('BBB_{2,5}|_{2,5}BBB|BB_B|B_BB')
     blue4 = re.compile('BBBB')
 
     board_string = get_board_string(board)
@@ -261,6 +213,8 @@ def win_opportunities(board):
 
 
 # returns True if player wins
+# validates input for column selection
+# places player piece on board
 def player_turn(board):
     print_player_dashboard(board)
     print()
@@ -284,41 +238,50 @@ def player_turn(board):
         end_player_turn(board)
         return False
 
+
+# check that a column can accept additional pieces
 def check_column_user(board, index):
     # check the first row to see if a blank is available
-    if board[0][index - 1] == 'O':
+    if board[0][index - 1] == '_':
         return True
     return False
 
 
+# is the board completely full?
 def board_full(board):
     for space in board[0]:
-        if space == 'O':
+        if space == '_':
             return False
     return True
 
 
+# for a given column(index), give the lowest open row
 def get_row(board, index):
     row_available = -1
     for row in board:
-        if row[index] != 'O':
+        if row[index] != '_':
             break
         else:
             row_available = row_available + 1
     return row_available
 
 
+# place user's piece in row/col
 def make_user_move(board, column, row):
     board[row][column] = 'B'
 
+
+# place AI's piece in row/col
 def make_AI_move(board, column, row):
     board[row][column] = 'R'
 
 
+# generate all possible boards resulting from one AI turn
+# return as a list of boards (2d lists)
 def gen_child_boards(board, player):
     children = []
     for space in range(0, 7):
-        if board[0][space] == 'O':
+        if board[0][space] == '_':
             b = copy.deepcopy(board)
             b[get_row(board, space)][space] = player
             children.append(b)
@@ -326,21 +289,24 @@ def gen_child_boards(board, player):
     return children
 
 
+# take scores list and generate evaluation score for current board state
+# higher score means a win is more likely for AI
 def evaluation(board):
     scores = win_opportunities(board)
-    plus = scores[0][0] + 2*scores[0][1] + 10*scores[0][2] + 10000*scores[0][3]
-    minus = scores[1][0] + 2*scores[1][1] + 10*scores[1][2] + 10000*scores[1][3]
+    plus = scores[0][0] + 3*scores[0][1] + 20*scores[0][2] + 10000*scores[0][3]
+    minus = scores[1][0] + 3*scores[1][1] + 20*scores[1][2] + 10000*scores[1][3]
     final = plus - minus
     return final
 
 
+# class comprised of a board, its score, and a list of children nodes
 class Node:
     def __init__(self, board):
         self.board = board
         self.children = []
         self.score = evaluation(self.board)
 
-    def set_children(self, player): # ! These need to be nodes themselves..
+    def set_children(self, player):
         temp_boards = gen_child_boards(self.board, player)
         for board in temp_boards:
             self.children.append(Node(board))
@@ -358,10 +324,13 @@ class Node:
         return self.score
 
 
+# minimax algorithm with alpha-beta pruning
+# depth of 7 (arbitrarily chosen)
+# builds out game tree per alpha-beta algorithm presented in class
 def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
     board = parent.get_board()
     current_score = parent.get_score()
-    if depth == 4 or board_full(board) or abs(current_score) >= 1000: # someone has won if the abs(score) > 1000
+    if depth == 42 or board_full(board) or abs(current_score) >= 1000: # someone has won if the abs(score) > 1000
         return current_score
     elif isMaxPlayer:
         parent.set_children('R')
@@ -372,7 +341,7 @@ def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
             # if depth == 0:
             #     return child
             return alpha
-    else: #minPlayer
+    else: # minPlayer
         parent.set_children('B')
         for child in parent.children:
             beta = min(beta, alphabeta(child, depth+1, alpha, beta, True))
@@ -381,14 +350,38 @@ def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
             return beta
 
 
+def minimax(parent, depth, max_player):
+    board = parent.get_board()
+    current_score = parent.get_score()
+    if depth == 4 or board_full(board) or abs(current_score) >= 1000:
+        return current_score
+    elif max_player:
+        parent.set_children('R')
+        temp = []
+        for child in parent.children:
+            temp.append(minimax(child, depth+1, False))
+        return max(temp)
+    else:
+        parent.set_children('B')
+        temp = []
+        for child in parent.children:
+            temp.append(minimax(child, depth+1, True))
+        return min(temp)
+
+
+
+
+# generate root node from current game board
+# run minimax/alphabeta algorithm to get scores on root's children
+# perform move from child with highest score
+# check if game is over
 def ai_turn(board):
-    # print("AI Turn Placeholder")
     root = Node(board)
 
-    alphabeta(root, 0, -100000, 100000, True)
-    if game_is_over(board, 0):
-        ai_wins(board)
-        return True
+    start_time = time.time()
+    # alphabeta(root, 0, -100000, 100000, True)
+    minimax(root, 0, True)
+    print("AI Algorithm Time: ", time.time() - start_time)
     children = root.get_children()
     children_values = []
     for child in children:
@@ -400,9 +393,14 @@ def ai_turn(board):
     row = get_row(board, max_index)
     make_AI_move(board, max_index, row)
 
+    if game_is_over(board, 0):
+        ai_wins(board)
+        return True
+
     return False
 
 
+# Primary game runner
 def main():
     test_board = [
         ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
@@ -413,16 +411,13 @@ def main():
         ['B', 'B', 'R', 'R', 'R', 'O', 'R'],
     ]
     board = [
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
-        ['O', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['_', '_', '_', '_', '_', '_', '_'],
+        ['_', '_', '_', '_', '_', '_', '_'],
+        ['_', '_', '_', '_', '_', '_', '_'],
+        ['_', '_', '_', '_', '_', '_', '_'],
+        ['_', '_', '_', '_', '_', '_', '_'],
+        ['_', '_', '_', '_', '_', '_', '_'],
              ]
-
-    # evaluation(test_board)
-    # gen_child_boards(test_board, 'X')
 
     # Game loop starting with AI's turn
     while True:
