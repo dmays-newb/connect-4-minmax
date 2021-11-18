@@ -64,6 +64,12 @@ def player_wins(board):
     input("You have won!\nPress Enter to end the game.")
 
 
+def ai_wins(board):
+    clear()
+    print_board(board)
+    input("You have lost!\nPress Enter to end the game.")
+
+
 # def check_column(board, column, player):
 #     column_string = ""
 #     blue = re.compile('B+')
@@ -305,6 +311,9 @@ def get_row(board, index):
 def make_user_move(board, column, row):
     board[row][column] = 'B'
 
+def make_AI_move(board, column, row):
+    board[row][column] = 'R'
+
 
 def gen_child_boards(board, player):
     children = []
@@ -329,19 +338,33 @@ class Node:
     def __init__(self, board):
         self.board = board
         self.children = []
-    def get_children(self, player): # ! These need to be nodes themselves..
-        self.children = gen_child_boards(self.board, player)
+        self.score = evaluation(self.board)
+
+    def set_children(self, player): # ! These need to be nodes themselves..
+        temp_boards = gen_child_boards(self.board, player)
+        for board in temp_boards:
+            self.children.append(Node(board))
+
+    def get_children(self):
+        return self.children
+
     def get_board(self):
         return self.board
+
+    def set_score(self, score):
+        self.score = score
+
+    def get_score(self):
+        return self.score
 
 
 def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
     board = parent.get_board()
-    current_score = evaluation(board)
-    if depth == 4 or board_full(parent.board) or abs(current_score) >= 1000: # someone has won if the score > 1000
+    current_score = parent.get_score()
+    if depth == 4 or board_full(board) or abs(current_score) >= 1000: # someone has won if the abs(score) > 1000
         return current_score
     elif isMaxPlayer:
-        parent.get_children('R')
+        parent.set_children('R')
         for child in parent.children:
             alpha = max(alpha, alphabeta(child, depth+1, alpha, beta, False))
             if beta <= alpha:
@@ -350,7 +373,7 @@ def alphabeta(parent, depth, alpha, beta, isMaxPlayer):
             #     return child
             return alpha
     else: #minPlayer
-        parent.get_children('B')
+        parent.set_children('B')
         for child in parent.children:
             beta = min(beta, alphabeta(child, depth+1, alpha, beta, True))
             if beta <= alpha:
@@ -363,6 +386,19 @@ def ai_turn(board):
     root = Node(board)
 
     alphabeta(root, 0, -100000, 100000, True)
+    if game_is_over(board, 0):
+        ai_wins(board)
+        return True
+    children = root.get_children()
+    children_values = []
+    for child in children:
+        children_values.append(child.get_score())
+
+    max_value = max(children_values)
+    max_index = children_values.index(max_value)
+
+    row = get_row(board, max_index)
+    make_AI_move(board, max_index, row)
 
     return False
 
